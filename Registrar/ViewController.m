@@ -19,6 +19,10 @@
 - (IBAction)submit:(id)sender;
 
 @property (nonatomic, strong) AFHTTPSessionManager *sessionManager;
+@property (nonatomic, strong) CAGradientLayer *gradient;
+@property (assign) NSInteger cycle;
+
+- (void) animateLayerWithTop:(UIColor *)top bottom:(UIColor *)bottom;
 
 @end
 
@@ -33,6 +37,52 @@
     AFHTTPSessionManager *sessionManager = [[AFHTTPSessionManager alloc] initWithBaseURL:[NSURL URLWithString:@"http://localhost:3000/"] sessionConfiguration:config];
     sessionManager.responseSerializer = [AFHTTPResponseSerializer serializer];
     self.sessionManager = sessionManager;
+    
+    self.cycle = 0;
+    self.gradient = [CAGradientLayer layer];
+    self.gradient.frame = self.view.bounds;
+    self.gradient.colors = @[(id)[UIColor purpleColor].CGColor,
+                             (id)[UIColor blueColor].CGColor];
+    self.gradient.startPoint = CGPointMake(0, 0);
+    self.gradient.endPoint = CGPointMake(1, 1);
+    
+    [self.view.layer insertSublayer:self.gradient atIndex:0];
+    
+    [self animateLayerWithTop:[UIColor redColor] bottom:[UIColor purpleColor]];
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    self.gradient.frame = self.view.bounds;
+}
+
+- (void) animateLayerWithTop:(UIColor *)top bottom:(UIColor *)bottom {
+    NSArray *fromColors = self.gradient.colors;
+    NSArray *toColors = @[(id)top.CGColor, (id)bottom.CGColor];
+    
+    [self.gradient setColors:toColors];
+    
+    CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"colors"];
+    
+    animation.fromValue             = fromColors;
+    animation.toValue               = toColors;
+    animation.duration              = 3.00;
+    animation.removedOnCompletion   = YES;
+    animation.fillMode              = kCAFillModeForwards;
+    animation.timingFunction        = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
+    animation.delegate              = self;
+    
+    [self.gradient addAnimation:animation forKey:@"animateGradient"];
+}
+
+- (void)animationDidStop:(CAAnimation *)anim finished:(BOOL)flag {
+    if (flag == NO) { return; }
+    switch (self.cycle++ % 4) {
+        case 0: [self animateLayerWithTop:[UIColor purpleColor] bottom:[UIColor redColor]]; break;
+        case 1: [self animateLayerWithTop:[UIColor blueColor] bottom:[UIColor purpleColor]]; break;
+        case 2: [self animateLayerWithTop:[UIColor purpleColor] bottom:[UIColor blueColor]]; break;
+        case 3: [self animateLayerWithTop:[UIColor redColor] bottom:[UIColor purpleColor]]; break;
+    }
 }
 
 - (IBAction) selectGender:(id)sender {
